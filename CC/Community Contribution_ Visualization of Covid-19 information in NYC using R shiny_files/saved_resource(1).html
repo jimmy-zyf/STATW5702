@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<!-- saved from url=(0074)http://127.0.0.1:6473/app4c0c105bd5c8589b655e917275dcc194/?w=&__subapp__=1 -->
+<html class=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <script type="application/shiny-singletons"></script>
+  <script type="application/html-dependencies">json2[2014.02.04];jquery[3.5.1];shiny[1.5.0];bootstrap-datepicker[1.6.4];bootstrap[3.4.1]</script>
+<script src="./json2-min(2).js"></script>
+<script src="./jquery.min(2).js"></script>
+<link href="./shiny(2).css" rel="stylesheet">
+<script src="./shiny.min(2).js"></script>
+<link href="./bootstrap-datepicker3.min.css" rel="stylesheet">
+<script src="./bootstrap-datepicker.min.js"></script>
+<script>
+(function() {
+  var datepicker = $.fn.datepicker.noConflict();
+  $.fn.bsDatepicker = datepicker;
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="./bootstrap.min(3).css" rel="stylesheet">
+<script src="./bootstrap.min(4).js"></script>
+<script src="./html5shiv.min(2).js"></script>
+<script src="./respond.min(2).js"></script>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="form-group shiny-input-container">
+      <label class="control-label" for="Name">What is your name?</label>
+      <input id="Name" type="text" class="form-control shiny-bound-input" value="">
+    </div>
+    <div id="Birthday" class="shiny-date-input form-group shiny-input-container shiny-bound-input">
+      <label class="control-label" for="Birthday">When is your birthday?</label>
+      <input type="text" class="form-control" data-date-language="en" data-date-week-start="0" data-date-format="yyyy-mm-dd" data-date-start-view="month" data-date-autoclose="true" data-date-dates-disabled="null" data-date-days-of-week-disabled="null">
+    </div>
+    <div id="date" class="shiny-text-output shiny-bound-output"> is born on 2020-11-02</div>
+  </div>
+
+
+</body></html>

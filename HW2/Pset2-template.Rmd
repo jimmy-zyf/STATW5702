@@ -1,0 +1,231 @@
+---
+author:
+title: "EDAV Fall 2020 PSet 2"
+output: 
+  pdf_document: 
+    fig_height: 3.5
+    fig_width: 5
+---
+
+Read *Graphical Data Analysis with R*, Ch. 4, 5
+
+Grading is based both on your graphs and verbal explanations. Follow all best practices as discussed in class. If calculations are involved, your scripts should be written so they would still work if the data values in the datasets you're working with were altered. For example:
+
+*Good*  
+
+`plot_df <- mtcars %>% group_by(cyl) %>% summarize(mean_mpg = mean(mpg))`
+
+*Bad*  
+
+`plot_df <- tibble(cyl = c(4, 6, 8), mean_mpg <- c(26.7, 19.7, 15.1))`
+
+Hints: Pay attention to bar order. Coordinate fill colors and legends *across* graphs. 
+
+```{r setup, include=FALSE}
+ # keep this chunk in your .Rmd file
+ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+    
+### 1. Water Taste Test
+
+Data: `WaterTaste` dataset in the **Lock5withR** package (available on CRAN)
+
+(a) Recode the `Class` and `Sex` columns using the human readable values listed in the help file. Display the first six rows of these two columns.
+```{r}
+library(Lock5withR)
+library(tidyverse)
+
+levels(WaterTaste$Class) <- c('First_year', 'Sophomore', 'Junior', 'Senior', 'Other')
+head(recode(WaterTaste$Class, F = 'First_year', J = 'Junior', O = 'Other', SO = 'Sophomore', SR = 'Senior'), 6)
+head(recode(WaterTaste$Gender, F = 'Female', M = 'Male'), 6)
+
+```
+
+
+
+(b) Create a horizontal bar chart of `FavBotWatBrand` counts.
+```{r}
+library(ggplot2)
+ggplot(WaterTaste, aes(y=factor(FavBotWatBrand)))+
+  geom_bar()+
+  theme_minimal()
+```
+
+
+(c) Create a vertical bar chart of `Class` counts. 
+```{r}
+ggplot(WaterTaste, aes(x=factor(Class)))+
+  geom_bar()+
+  theme_minimal()
+```
+
+
+(d) Create a vertical grouped bar chart of `Class` and `UsuallyDrink` in which each level of `Class` forms one group containing three bars representing the three levels of `UsuallyDrink`.
+```{r}
+ggplot(WaterTaste, aes(x = Class, fill = UsuallyDrink)) + geom_bar(position = 'dodge')
+```
+
+
+(e) Create a horizontal stacked bar chart of proportions showing the type of water respondents usually drink by Class. The order of the levels of both categorical variables should match what is shown in the assignment. (Note that the order of the fill colors of the bars match the order of the fill colors in the legend.)
+```{r}
+ggplot(WaterTaste, aes(y = fct_rev(Class), fill = UsuallyDrink)) + geom_bar(position = 'fill')
+```
+
+
+(f) Create a horizontal stacked bar chart showing the proportional breakdown of `Class` for each level of `UsuallyDrink`, faceted on `Gender`. Use a descriptive title. (See assignment for example.)
+```{r}
+ggplot(WaterTaste, aes(y = fct_rev(Class), fill = UsuallyDrink)) + geom_bar(position = 'fill') + 
+  facet_grid(~Gender)
+```
+
+
+
+### 2. Metacritic
+
+To get the data for this problem, we'll scrape data from `www.metacritic.com`. Important: you should only execute parts (a) and (b) *once*. Therefore, it should be clear to us that the code isn't being run each time you knit the document. You may either set `eval=FALSE` in these chunks or comment out the appropriate lines.
+
+(a) Use the `paths_allowed()` function from **robotstxt** to make sure it's ok to scrape https://www.metacritic.com/publication/digital-trends. What is the result?
+```{r}
+#library(robotstxt)
+#paths_allowed('https://www.metacritic.com/publication/digital-trends')
+```
+
+
+(b) Use the **rvest** package to read the URL in part (a), and then find the title, metascore and critic score for each game listed. Create a data frame with these three columns and save it. (You may remove any rows with missing data.) 
+```{r}
+library(rvest)
+library(stringr)
+wb <- read_html("https://www.metacritic.com/publication/digital-trends")
+```
+```{r}
+title_text <- html_nodes(wb, 'div.review_product a') %>% html_text()
+```
+```{r}
+metascore_text <- html_nodes(wb, '.brief_metascore') %>% html_text() %>% str_trim() %>% substring(1, 2) %>% as.numeric()
+```
+```{r}
+criticscore_text <- html_nodes(wb, '.brief_critscore') %>% html_text() %>% str_trim() %>% substring(1, 2) %>% as.numeric()
+```
+```{r}
+library(tibble)
+table <- tibble(title = title_text, metascore = metascore_text, criticscore = criticscore_text)
+table <- table[complete.cases(table), ]
+table
+```
+```{r}
+write.csv(table,'hw2q2.csv')
+```
+
+
+(c) Read your saved data back in and display the first six rows.
+```{r}
+metacritic <- read.csv(file = 'hw2q2.csv')
+head(metacritic, 6)
+```
+
+
+(d) Create a Cleveland dot plot of metascores.
+```{r}
+ggplot(metacritic, aes(metascore, title)) + geom_point()
+```
+
+
+(e) Create a Cleveland dot plot of metascore *and* critic score on the same graph, one color for each. Sort by metascore.
+```{r}
+metacritic <- metacritic[order(metacritic$metascore),]
+metacritic
+```
+
+```{r}
+ggplot(metacritic) + 
+  geom_point(aes(metascore, title), color = 'blue') + 
+  geom_point(aes(criticscore, title), color = 'red') +
+  labs(x = "Cleveland dot plot of metascore and critic score on the same graph, one color for each. Sort by metascore")
+```
+
+
+### 3. Nutrition
+
+Data: `nutrition` dataset in **EDAWR** package, install from GitHub:
+
+`remotes::install_github("rstudio/EDAWR")`
+
+
+For parts (a) - (d) draw four plots of `calories` vs. `carbohydrates` as indicated. For all, adjust parameters to the levels that provide the best views of the data.
+
+(a) Points with alpha blending
+```{r}
+library(EDAWR)
+a <- ggplot(nutrition, aes(calories, carbohydrates)) + 
+  geom_point(alpha = 0.3, color = 'blue', stroke = 0) + theme_classic(14)
+a 
+```
+
+
+(b) Points with alpha blending + density estimate contour lines
+```{r}
+a + geom_density_2d()
+```
+
+
+(c) Hexagonal heatmap of bin counts
+```{r}
+library(hexbin)
+#d <- ggplot(nutrition, aes(calories, carbohydrates)) + scale_fill_viridis_c() + theme_classic(18)
+a + geom_hex()
+```
+
+
+(d) Square heatmap of bin counts 
+```{r}
+d + geom_bin2d(binwidth = c(10, 10))
+```
+
+(e) Describe noteworthy features of the relationship between the variables based on your plots from parts (a)-(d), using the "Movie ratings" example on page 82 (last page of Section 5.3) as a guide. Which one do you think is most informative and why?
+```{r}
+
+```
+
+
+(f) Recreate your scatterplot from part (a) with `gray80` for the color, adding an additional `geom_point()` layer only containing points for foods in the top three food categories (`group` column) by count. What do you learn?
+```{r}
+new <- nutrition %>% count(group, sort = TRUE)
+avector <- as.vector(new$group)
+top_three <- avector[1:3]
+
+nutrition_new <- nutrition[nutrition$group %in% top_three,]
+```
+
+```{r}
+ggplot(NULL, aes(calories, carbohydrates)) + 
+geom_point(data = nutrition, alpha = 0.8, color = 'gray80', stroke = 0) + 
+geom_point(data = nutrition_new)
+```
+
+
+
+
+### 4. Australian Institute of Sport data
+
+Data: `ais` dataset in **alr4** package (available on CRAN)
+
+(a) Draw a scatterplot matrix of the continuous variables in the `ais` dataset. Which pairs of variables (if any) are strongly positively associated and which are strongly negatively associated?
+```{r}
+ais
+```
+
+```{r}
+library(alr4)
+library(dplyr)
+pairs(ais[c('Ht', 'Wt', 'LBM', 'RCC', 'WCC', 'Hc', 'Hg', 'BMI')])
+```
+
+
+(b) Color the points by `Gender`. Do new patterns emerge? Describe a few of the most prominent.
+```{r}
+group <- NA
+group[ais$Sex == 0] <- 1
+group[ais$Sex == 1] <- 2
+pairs(ais[c('Ht', 'Wt', 'LBM', 'RCC', 'WCC', 'Hc', 'Hg', 'BMI')], col = c("red", "cornflowerblue")[group])
+```
+

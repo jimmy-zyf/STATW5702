@@ -1,0 +1,187 @@
+---
+title: "EDAV Fall 2020 PSet 3"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+Read *Graphical Data Analysis with R*, Ch. 6, 7
+
+Grading is based both on your graphs and verbal explanations. All graphs must have informative titles and follow all best practices as discussed in class.
+
+Labels do not have to perfect but they have to be legible. Often it is helpful to shorten or abbreviate labels: this can be done before plotting or within the plot functions. Be sure to include all adjustments in your scripts.
+
+```{r setup, include=FALSE}
+ # keep this chunk in your .Rmd file
+ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+### 1. penquins
+
+We will use the `penguins_raw` dataset from the **palmerpenguins** package.
+
+(a) Draw a parallel coordinates plot of the numeric columns in the dataset using `ggparcoord` from the **GGally** package. Choose parameters to help identify trends. What do you observe?
+```{r}
+library(GGally)
+library(palmerpenguins)
+```
+```{r}
+data <- Filter(is.numeric, penguins_raw)
+ggparcoord(data, columns = 1 : 7, alphaLines =.3, scale ="uniminmax") + geom_vline(xintercept =1:7, color ="lightblue")
+```
+Sample number and culmen length, Body Mass (g) and Delta 15 N (o/oo), tend to have negative correlation. Flipper length is either high or low not much in the middle at .50. Average culmen legnth is low with some outliers having high culmen length.
+
+
+(b) Experiment with using color to separate factor levels of the factor variables (one at a time, not in the same graph). Include the plot which shows the most distinct clusters. Briefly describe how the clusters differ from each other. (The factor variable should not be included as an axis in the parallel coordinates plot.)
+```{r}
+penguins_raw
+```
+
+```{r}
+library(gridExtra)
+p1 <- ggparcoord(penguins_raw, columns = c(2, 10:13, 15:16), groupColumn = 3, alphaLines =.3, scale ="uniminmax", title = 'group by species')
+p2 <- ggparcoord(penguins_raw, columns = c(2, 10:13, 15:16), groupColumn = 5, alphaLines =.3, scale ="uniminmax", title = 'group by island')
+p3 <- ggparcoord(penguins_raw, columns = c(2, 10:13, 15:16), groupColumn = 14, alphaLines =.3, scale ="uniminmax", title = 'group by sex')
+grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+
+
+Penguins from Biscoe island tend to have higher Culum length and lower culum depth & Delta 15N compared with other Island. Penguins from Dream and Togersen always have similar characteristics.
+
+### 2. pulitzer
+
+(a) Draw an interactive parallel coordinates plot of the `pulitzer` dataset in the **fivethirtyeight** package with brushing using the `parcoords()` function in the **parcoords** package. 
+```{r}
+library(dplyr)
+library(fivethirtyeight)
+library(parcoords)
+```
+```{r}
+pulitzer %>% arrange(newspaper) %>%
+  parcoords(
+    rownames = F, 
+    brushMode = "1D-axes", 
+    reorderable = T, 
+    queue = T)
+```
+
+(b) Which newspapers appear to be multivariate outliers? Briefly describe their unusal patterns.
+
+New York Times, USA Today, Los Angeles Times, and Wall Street Journal. These journals have a high number of pulitzer prizes in all years compared to the other journals. They also have high daily circulation in both 2004 and 2013 than most other journals.
+
+(c) Choose one of the newspapers and research it online to gain a deeper understanding of its uniqueness. Provide a brief summary of your results. *Cite your sources by linking to the pages where you found the information.*
+
+
+
+### 3. doctor visits
+
+For this problem we will use the `DoctorVisits` data set in the **AER** package. (Note: for this package you need `data("DoctorVisits")` to load the data.)
+
+(a) We will consider `visits` to be the dependent variable. Create a new factor column, `numvisits`, based on `visits`, that contains three levels: "0", "1", and "2+". (Tidyverse option: `forcats::fct_collapse()`). Why is this a reasonable choice?
+```{r}
+library('AER')
+library(forcats)
+data("DoctorVisits")
+```
+```{r}
+DoctorVisits$visits <- as.factor(DoctorVisits$visits)
+```
+
+
+```{r}
+DoctorVisits <- DoctorVisits %>%
+  mutate(numvisits = fct_collapse(visits,
+    '0' = c("0"),
+    '1' = c("1"),
+    '2+' = c("2", "3", "4", "5", "6", "7", "8", "9")
+  ))
+head(DoctorVisits)
+```
+Because people who visit more than or equals to 2 means he/she is a re-visit patient so they can be allocated to one category. Those who visited once may just for some specific reason.  
+
+
+(b) Draw a mosaic pairs plot of all factor variables in `DoctorVisits`. Based on the plot, which variables appear to have a *strong* association with `numvisits`? *medium* association? *weak or no* association? (Make your judgments relative to the other variables.)
+```{r}
+count <- DoctorVisits %>%
+  group_by(gender, private, freepoor, freerepat, nchronic, lchronic, numvisits) %>%
+  summarise(Freq = n())
+head(count)
+```
+
+```{r}
+factor_summary <- DoctorVisits %>% group_by(gender, private, freepoor, freerepat, nchronic, lchronic, numvisits) %>% tally()
+pairs(xtabs(n ~ ., factor_summary))
+```
+
+
+(c) Are p-values from $\chi^2$ (chi-squared) tests of each of the variables and `numvisits` consistent with your categorization in part (b)? Explain briefly.
+
+```{r}
+X1 <- chisq.test(DoctorVisits$numvisits, DoctorVisits$gender)
+X2 <- chisq.test(DoctorVisits$numvisits, DoctorVisits$private)
+X3 <- chisq.test(DoctorVisits$numvisits, DoctorVisits$freepoor)
+X4 <- chisq.test(DoctorVisits$numvisits, DoctorVisits$freerepat)
+X5 <- chisq.test(DoctorVisits$numvisits, DoctorVisits$nchronic)
+X6 <- chisq.test(DoctorVisits$numvisits, DoctorVisits$lchronic)
+X1
+X2
+X3
+X4
+X5
+X6
+```
+
+(d) Draw mosaic plots of `gender`, `lchronic`, `private` and `numvisits` in stages: 
+
+* `gender` and `numvisits`  
+```{r}
+vcd::mosaic(numvisits ~ gender,
+       direction = c("v", "h"), highlighting_fill = c("grey90", "cornflowerblue"), count)
+```
+
+* `gender`, `lchronic` and `numvisits`
+```{r}
+vcd::mosaic(numvisits ~ gender + lchronic,
+       direction = c("v", "v", "h"), highlighting_fill = c("red", "cornflowerblue"), count)
+```
+
+* `gender`, `lchronic`, `private` and `numvisits` 
+```{r}
+vcd::mosaic(numvisits ~ gender + lchronic + private,
+       direction = c("v", "v", "v", "h"), highlighting_fill = c("grey90", "cornflowerblue"), count)
+```
+
+All cuts should be vertical except the last one. The last cut should be the dependent variable. Use appropriate fill colors. What patterns do you observe?
+
+Gender, provate, and Ichronic may not be a good feature for split.
+
+(e) Use `geom_alluvium()` from the **ggalluvial** package to display the same variables as in the last graph of part (d). What new information / perspective does the alluvial plot provide, if any?
+```{r}
+library(ggalluvial)
+```
+```{r}
+ggplot(as.data.frame(count), aes(y = Freq, axis1 = lchronic, axis2 = private)) +   
+  geom_alluvium(aes(fill = lchronic), width = 1/12)
+```
+Those who is Ichronic and those who not have totally different patterns.
+
+### 4. likert data
+
+(a) Find data online with at least three categorical variables whose levels form the same spectrum from one pole to its opposite. A common example is likert survey responses with categories such as "Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree", but your choice does not need to involve likert data. **Provide a link to your data source.**
+```{r}
+data <- read.csv('https://raw.githubusercontent.com/nychealth/coronavirus-data/master/by-age.csv')
+```
+
+(b) If possible read your data directly from the site. If not (for example if it is in pdf form), create a data frame in your code, or read it in from a data file that you've created. Include the file with your submission. Display a table of your data in summarized form. 
+```{r}
+head(data)
+```
+
+(c) Draw a diverging stacked bar chart of your data, following all best practices. You may use any package.
+```{r}
+HH::likert(AGE_GROUP~., data, positive.order = TRUE,
+           main = 'NYC Covid-19 test result by age',
+           xlab = 'percent', ylab = 'age group')
+```
+
